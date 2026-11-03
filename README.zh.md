@@ -99,4 +99,4 @@ npm run pack:check # 本仓库会发布的 npm 内容
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 李铭魁 (githublmk)
+[MIT](LICENSE) © 2026 githublmk

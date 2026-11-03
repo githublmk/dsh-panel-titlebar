@@ -99,4 +99,4 @@ No dependencies, no build tool: the browser module is plain ESM consumed by the 
 
 ## License
 
-[MIT](LICENSE) © 2026 李铭魁 (githublmk)
+[MIT](LICENSE) © 2026 githublmk
