@@ -1,0 +1,6 @@
+# dsh-panel-titlebar bundle patch: the profile's bundle selection loads this
+# layer, which mounts the one dual-face plugin row. The host half is a no-op;
+# the browser half only restyles the already-registered sidebar panel nav.
+- insert:
+    - id: panel-titlebar
+      name: dsh-panel-titlebar

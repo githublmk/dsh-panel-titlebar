@@ -1,0 +1,75 @@
+{
+  "name": "dsh-panel-titlebar",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness Desktop: move the sidebar's global panel entries into the Windows title bar, right after the Application and Edit menus.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "harness",
+    "cordis",
+    "sidebar",
+    "titlebar",
+    "windows",
+    "layout"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "李铭魁",
+    "url": "https://github.com/githublmk"
+  },
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/githublmk/dsh-panel-titlebar.git"
+  },
+  "homepage": "https://github.com/githublmk/dsh-panel-titlebar#readme",
+  "bugs": {
+    "url": "https://github.com/githublmk/dsh-panel-titlebar/issues"
+  },
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.1-0"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js",
+    "test": "node --test test/bundle.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}

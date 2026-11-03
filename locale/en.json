@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Panels in the title bar",
+    "description": "Moves the sidebar's global panel entries (Plugins, Market, Schedules, Context, Memory, More) into the Desktop title bar, right after the Application and Edit menus, so they stop taking vertical space above the conversation list."
+  }
+}

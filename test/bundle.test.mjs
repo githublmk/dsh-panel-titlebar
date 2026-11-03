@@ -1,0 +1,95 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)))
+const read = (path) => readFileSync(join(root, path), 'utf8')
+const pkg = JSON.parse(read('package.json'))
+
+test('the manifest declares the dual-face bundle and the client entry', () => {
+  assert.equal(pkg.name, 'dsh-panel-titlebar')
+  assert.equal(pkg.type, 'module')
+  assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
+  assert.equal(pkg.dsh.client.platform, 'web')
+  assert.deepEqual(pkg.dsh.client.inject, ['@deepseek-ai/dsh-client-ui-sidebar'])
+})
+
+test('the bundle patch mounts one row named after the package', () => {
+  const patch = read('cordis.patch.yml')
+  assert.match(patch, /^-\s+insert:/m)
+  assert.match(patch, /^\s{4}-\s+id:\s+panel-titlebar$/m)
+  assert.match(patch, /^\s{6}name:\s+dsh-panel-titlebar$/m)
+  assert.equal((patch.match(/- id:/g) ?? []).length, 1)
+})
+
+test('display metadata describes the delivered capability in both locales', () => {
+  for (const locale of ['en', 'zh']) {
+    const resource = JSON.parse(read(`locale/${locale}.json`))
+    assert.ok(resource.meta.title.length > 0, `${locale}: meta.title`)
+    assert.ok(resource.meta.description.length > 20, `${locale}: meta.description`)
+  }
+})
+
+test('every exported runtime file exists', () => {
+  for (const path of [
+    pkg.main,
+    pkg.dsh.bundle.patch,
+    pkg.dsh.client && Object.values(pkg.exports)[0],
+    pkg.exports['./client'],
+    pkg.exports['./icon'],
+    'locale/en.json',
+    'locale/zh.json',
+    'LICENSE',
+    'README.md',
+    'README.zh.md',
+    'CHANGELOG.md',
+  ]) {
+    if (path === undefined) continue
+    assert.ok(existsSync(join(root, path)), `${path} is missing`)
+  }
+})
+
+test('the client module registers under the package name', () => {
+  const client = read('client.js')
+  assert.match(client, /window\.__ModuleLoader__\.load\(\{/)
+  assert.match(client, /id:\s*"dsh-panel-titlebar"/)
+  assert.match(client, /apply\(ctx\)/)
+})
+
+test('the stylesheet only restyles the Windows caption row', () => {
+  const client = read('client.js')
+  const opening = 'const CSS = `'
+  const start = client.indexOf(opening)
+  assert.ok(start > 0, 'the stylesheet constant must exist')
+  const from = start + opening.length
+  const to = client.indexOf('`;', from)
+  assert.ok(to > from, 'the stylesheet constant must be terminated')
+  const css = client.slice(from, to).replace(/\$\{[^}]*\}/g, 'INTERPOLATED')
+
+  const rules = css
+    .split('}')
+    .map((block) => block.split('{')[0].trim())
+    .filter((selector) => selector.length > 0)
+  assert.ok(rules.length >= 4, 'expected the caption-row rules')
+  for (const selector of rules) {
+    for (const line of selector.split('\n').map((entry) => entry.trim()).filter((entry) => entry.length > 0)) {
+      assert.ok(
+        line.startsWith('html[data-windows-titlebar]'),
+        `every rule must carry the caption-row scope, found: ${line}`,
+      )
+    }
+  }
+
+  assert.match(css, /position:\s*fixed/)
+  assert.match(css, /--dsh-panel-titlebar-left/)
+  assert.doesNotMatch(client, /document\.body\.appendChild|removeChild|innerHTML/)
+})
+
+test('the placer follows the caption menubar instead of a hardcoded offset', () => {
+  const client = read('client.js')
+  assert.match(client, /\[data-windows-menu\]/)
+  assert.match(client, /getBoundingClientRect\(\)/)
+  assert.match(client, /ctx\.effect\(/)
+})
