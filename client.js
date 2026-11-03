@@ -315,10 +315,20 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 						};
 
 						/* Position and size of both anchors can change without a resize event.
-						 * One second is enough: the reads below force a style/layout flush, and
-						 * the sidebar and right column both report their own resizes. */
-						const timer = window.setInterval(() => {
+						 * Every read below forces a style/layout flush, so the periodic pass
+						 * runs only when the page is idle: a flush that lands in the middle of
+						 * a view mount costs the whole tree, which is exactly when the user is
+						 * waiting for a switch to finish. */
+						let idle = 0;
+						const idleRun = () => {
+							idle = 0;
 							if (document.visibilityState !== "hidden") run();
+						};
+						const timer = window.setInterval(() => {
+							if (idle !== 0) return;
+							idle = typeof window.requestIdleCallback === "function"
+								? window.requestIdleCallback(idleRun, { timeout: 2000 })
+								: window.setTimeout(idleRun, 200);
 						}, 1000);
 						window.addEventListener("resize", schedule);
 						const resize = typeof ResizeObserver === "function"
@@ -345,6 +355,10 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 
 						return () => {
 							window.clearInterval(timer);
+							if (idle !== 0) {
+								if (typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idle);
+								else window.clearTimeout(idle);
+							}
 							if (frame !== 0) window.cancelAnimationFrame(frame);
 							window.removeEventListener("resize", schedule);
 							resize?.disconnect();

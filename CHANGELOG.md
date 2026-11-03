@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-03
+
+### Fixed
+
+- The periodic alignment pass no longer forces a style/layout flush in the middle
+  of a view mount. It runs in a `requestIdleCallback` (2000 ms timeout) instead of
+  synchronously from the interval; resize and mutation paths still measure at once.
+
+  Measured on the 400-step session that reported the lag, from `selectPanel(null)`
+  to the conversation being back:
+
+  | build | cycle 1 | cycle 2 |
+  | --- | --- | --- |
+  | plugin disabled (baseline) | 566 ms | 658 ms |
+  | 0.3.1 (interval forces layout) | 854 ms | 845 ms |
+  | 0.3.2 (idle measurement) | 593 ms | 635 ms |
+
+  Opening a panel stayed at ~50鈥?60 ms in every build, so the remaining wait is the
+  harness remounting the conversation view, not the toggle.
+
 ## [0.3.1] - 2026-11-03
 
 ### Changed
@@ -55,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ship Plugin Manager display metadata (English and Chinese), an exported icon, a
   static contract test suite and a CI workflow.
 
-[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.1.0...v0.2.0
