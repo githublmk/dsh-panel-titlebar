@@ -1,6 +1,7 @@
 # dsh-panel-titlebar
 
 [![CI](https://github.com/githublmk/dsh-panel-titlebar/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/githublmk/dsh-panel-titlebar/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/dsh-panel-titlebar?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-panel-titlebar)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E2%89%A50.2.1--0-1f6feb.svg)](https://github.com/deepseek-ai/deepseek-harness)
 
