@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-03
+
+### Added
+
+- Move the session stats (turn/step counts, decode speed, token total, cache hit and
+  the context meter) from the composer dock below the input into the View tab row,
+  right after its More launcher. The dock keeps its own registration and its own
+  dialogs; only its seat is measured into place (`--dsh-statbar-top`,
+  `--dsh-statbar-left`), and the marker is dropped whenever the anchor is missing so
+  the stats fall back to their shipped place.
+
 ## [0.2.0] - 2026-11-03
 
 ### Added
@@ -32,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ship Plugin Manager display metadata (English and Chinese), an exported icon, a
   static contract test suite and a CI workflow.
 
-[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/githublmk/dsh-panel-titlebar/releases/tag/v0.1.0

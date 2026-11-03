@@ -71,6 +71,34 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelTitle"]
 html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"] {
   flex: none;
 }
+/*
+ * Session stats: the composer dock (turn/step counts, speed, token total, cache
+ * hit and the context meter) moves into the View tab row, right after its More
+ * launcher. Gated on the marker the measurement sets, so the dock keeps its
+ * shipped place whenever the header anchor cannot be found.
+ */
+html[data-dsh-statbar] [data-composer-dock] {
+  position: fixed;
+  top: var(--dsh-statbar-top, 96px);
+  left: var(--dsh-statbar-left, 320px);
+  right: 24px;
+  box-sizing: border-box;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(-50%);
+  z-index: 30;
+  pointer-events: auto;
+}
+html[data-dsh-statbar] [data-composer-dock] > * {
+  flex: none;
+}
 `;
 
 		/**
@@ -94,6 +122,41 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"]
 				if (next === previous) return;
 				previous = next;
 				root.style.setProperty(LEFT_VAR, next);
+			};
+		}
+
+		/**
+		 * Park the session stats in the View tab row, right after its More
+		 * launcher.
+		 *
+		 * Both the tab row and the launcher move with the session, the right
+		 * column and the window width, so the anchor is re-measured with the same
+		 * cadence as the caption offset. The marker is only set while the anchor
+		 * exists: without it the dock keeps its shipped place below the composer.
+		 *
+		 * @param root - the document element receiving the custom properties.
+		 * @returns a function that performs one measurement.
+		 */
+		function statPlacer(root) {
+			let previous = "";
+			return () => {
+				const anchor = document.querySelector('button[class*="viewsMore"]')
+					?? document.querySelector('[class*="viewTabs"]');
+				const rect = anchor === null ? null : anchor.getBoundingClientRect();
+				if (rect === null || (rect.width === 0 && rect.height === 0)) {
+					if (root.hasAttribute("data-dsh-statbar")) root.removeAttribute("data-dsh-statbar");
+					previous = "";
+					return;
+				}
+				const top = Math.round(rect.top + rect.height / 2);
+				const left = Math.round(rect.right + 18);
+				const next = `${top},${left}`;
+				if (next !== previous) {
+					previous = next;
+					root.style.setProperty("--dsh-statbar-top", `${top}px`);
+					root.style.setProperty("--dsh-statbar-left", `${left}px`);
+				}
+				if (!root.hasAttribute("data-dsh-statbar")) root.setAttribute("data-dsh-statbar", "");
 			};
 		}
 
@@ -156,19 +219,24 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"]
 					ctx.effect(() => {
 						const root = document.documentElement;
 						const measure = placer(root);
-						measure();
+						const measureStats = statPlacer(root);
+						const run = () => {
+							measure();
+							measureStats();
+						};
+						run();
 
 						let frame = 0;
 						const schedule = () => {
 							if (frame !== 0) return;
 							frame = window.requestAnimationFrame(() => {
 								frame = 0;
-								measure();
+								run();
 							});
 						};
 
-						/* Position and size of the menubar can change without a resize event. */
-						const timer = window.setInterval(measure, 500);
+						/* Position and size of both anchors can change without a resize event. */
+						const timer = window.setInterval(run, 500);
 						window.addEventListener("resize", schedule);
 						const resize = typeof ResizeObserver === "function"
 							? new ResizeObserver(schedule)
@@ -198,8 +266,9 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"]
 							window.removeEventListener("resize", schedule);
 							resize?.disconnect();
 							watch?.disconnect();
+							root.removeAttribute("data-dsh-statbar");
 						};
-					}, "panel-titlebar: caption alignment");
+					}, "panel-titlebar: chrome alignment");
 
 					ctx.effect(() => installToggle(ctx), "panel-titlebar: entry toggle");
 				}

@@ -58,7 +58,7 @@ test('the client module registers under the package name', () => {
   assert.match(client, /apply\(ctx\)/)
 })
 
-test('the stylesheet only restyles the Windows caption row', () => {
+test('the stylesheet only restyles the two measured, marked seats', () => {
   const client = read('client.js')
   const opening = 'const CSS = `'
   const start = client.indexOf(opening)
@@ -66,25 +66,40 @@ test('the stylesheet only restyles the Windows caption row', () => {
   const from = start + opening.length
   const to = client.indexOf('`;', from)
   assert.ok(to > from, 'the stylesheet constant must be terminated')
-  const css = client.slice(from, to).replace(/\$\{[^}]*\}/g, 'INTERPOLATED')
+  const css = client
+    .slice(from, to)
+    .replace(/\$\{[^}]*\}/g, 'INTERPOLATED')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
 
   const rules = css
     .split('}')
     .map((block) => block.split('{')[0].trim())
     .filter((selector) => selector.length > 0)
-  assert.ok(rules.length >= 4, 'expected the caption-row rules')
+  assert.ok(rules.length >= 6, 'expected the caption-row and stats rules')
+  const scopes = ['html[data-windows-titlebar]', 'html[data-dsh-statbar]']
   for (const selector of rules) {
     for (const line of selector.split('\n').map((entry) => entry.trim()).filter((entry) => entry.length > 0)) {
       assert.ok(
-        line.startsWith('html[data-windows-titlebar]'),
-        `every rule must carry the caption-row scope, found: ${line}`,
+        scopes.some((scope) => line.startsWith(scope)),
+        `every rule must carry a measured seat scope, found: ${line}`,
       )
     }
   }
 
   assert.match(css, /position:\s*fixed/)
   assert.match(css, /--dsh-panel-titlebar-left/)
+  assert.match(css, /\[data-composer-dock\]/)
+  assert.match(css, /--dsh-statbar-left/)
   assert.doesNotMatch(client, /document\.body\.appendChild|removeChild|innerHTML/)
+})
+
+test('the session stats follow the View tab row and fall back cleanly', () => {
+  const client = read('client.js')
+  assert.match(client, /function statPlacer/)
+  assert.match(client, /button\[class\*="viewsMore"\]/)
+  assert.match(client, /class\*="viewTabs"/)
+  assert.match(client, /removeAttribute\("data-dsh-statbar"\)/, 'the dock must return when the anchor is gone')
+  assert.match(client, /setAttribute\("data-dsh-statbar"/)
 })
 
 test('the placer follows the caption menubar instead of a hardcoded offset', () => {

@@ -23,6 +23,8 @@
 
 <img src="docs/sidebar.png" alt="改造后：侧边栏直接从品牌行和会话列表开始" width="420">
 
+输入框下方那排会话统计（轮/步数、解码速度、token 总量、缓存命中、上下文占用）也一并上移，落到视图标签行里「…」按钮的右侧。
+
 ## 实现方式
 
 - 导航仍然是侧边栏插件自己的 `sidebar.panellist` 注册，不复制、不包裹、不替换、不删除任何条目——所以「更多」入口、它的固定/取消固定菜单、当前面板高亮、官方条目埋点全部原样保留。
@@ -30,6 +32,7 @@
 - 样式表全部限定在 `html[data-windows-titlebar]` 下——这个标记只有 Desktop 的 preload 会写，**纯 Web 版界面保持原来的竖排不动**。
 - 左边距是**测量出来的**，不是写死的：插件读取 preload 注入的 `[data-windows-menu]` 右边缘写入 `--dsh-panel-titlebar-left` 并保持更新，因此侧栏收起（菜单起点 48px → 84px）、切换语言、缩放窗口都不会错位。
 - 条目是**开关式**的：再次点击当前已选中的条目会回到会话（`layout.selectPanel(null)`，与面板自带的“返回会话”同一去处），而不是把已经打开的面板再选一遍。这次点击会在原生处理器之前被拦下；「更多」入口不是面板条目，仍然照常打开它的菜单。
+- 统计条目仍然由 `conversation.composer.dock` 自己的注册渲染，弹层与数值更新都不变，只是**换了个座位**：停靠条按视图标签行「…」按钮的位置（`--dsh-statbar-top` / `--dsh-statbar-left`）定位并垂直居中。一旦找不到锚点（没有会话、在面板页、布局收起等），插件会移除 `data-dsh-statbar`，停靠条自动回到输入框下方原位。
 
 ## 环境要求
 
@@ -73,6 +76,7 @@ plugin_manager install_bundle
 | 想要的效果 | 改法 |
 | --- | --- |
 | 离菜单更远一点 | 在 `:root` 上覆盖 `--dsh-panel-titlebar-left`（默认是测量出的菜单右边缘 + 10px） |
+| 统计离标签更远一点 | 在 `:root` 上覆盖 `--dsh-statbar-left`（默认是测量出的「…」右边缘 + 18px） |
 | 更紧凑的行 | 去掉行规则里的 `padding` / `font-size`，即回落到原生 36px 规格 |
 | 面板与菜单之间加一点间隔 | 给第一行加 `margin-left`，例如 `nav:has(> [class*="panelRow"]) > *:first-child` |
 
@@ -83,6 +87,7 @@ plugin_manager install_bundle
 - 规则依赖侧边栏的 CSS Modules 类名后缀（`panelRow`、`panelTitle`、`panelGlyph`）以及承载面板行的 `nav`。若未来某个 Harness 版本重写侧边栏，本插件可能需要同步更新；客户端模块因此声明在 `@deepseek-ai/dsh-client-ui-sidebar` 之后加载。
 - 标题栏带高 40px 且不换行：窗口很窄时，末尾条目会省略并最终被裁掉，而不会挤走窗口控制按钮。
 - 「更多」弹层沿用原生锚定（打开时按触发按钮的位置测量）。
+- 统计上移依赖视图标签行暴露的「…」按钮（`button.viewsMore*`）或 `viewTabs` 容器，并假定 `[data-composer-dock]` 里只有环境类统计条目。若某个 profile 往这个停靠条里塞了别的常驻面板，它会被一并带上去；找不到锚点时停靠条留在原位。
 - 已在 Windows 11 + DSH Desktop（harness `0.2.1-rc.5`，150% 缩放）验证：放置位置、在线安装、侧边栏空间回收。hover 与「更多」弹层复用原生组件、为手动验证；CI 只覆盖静态契约。
 
 ## 开发

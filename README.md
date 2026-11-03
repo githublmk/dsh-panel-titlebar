@@ -23,6 +23,8 @@ The rows keep their icons, labels, active state and click behaviour, and move in
 
 <img src="docs/sidebar.png" alt="After: the sidebar starts with the brand row and the session list" width="420">
 
+The session stats that ship below the composer — turn and step counts, decode speed, token total, cache hit and the context meter — move up into the View tab row, right after its **…** launcher.
+
 ## How it works
 
 - The navigation stays the sidebar plugin's own registration in `sidebar.panellist`. Nothing is copied, wrapped, replaced or removed, so the **More** launcher, its pin/unpin menu, the active-panel highlight and the analytics of the shipped entries are untouched.
@@ -30,6 +32,7 @@ The rows keep their icons, labels, active state and click behaviour, and move in
 - The stylesheet is scoped to `html[data-windows-titlebar]`, a marker only the Desktop preload sets. The plain Web GUI keeps the shipped vertical list.
 - The left offset is **measured**, not hardcoded: the plugin reads the right edge of the preload-injected `[data-windows-menu]` host into `--dsh-panel-titlebar-left` and keeps it current, so collapsing the sidebar (menu start moves 48px → 84px), switching locale, or resizing stays aligned.
 - The entries work as a **toggle**: clicking the selected entry again returns to the conversation (`layout.selectPanel(null)`, the same destination as a panel's own “back to chat”), instead of re-selecting the panel that is already open. The click is stopped before the shipped handler runs; the **More** launcher never acts as a panel entry, so it keeps opening its menu.
+- The stats keep their own registration in `conversation.composer.dock` and their own dialogs; only their seat moves. The dock still renders the pills, but is positioned from the View tab row's **…** launcher (`--dsh-statbar-top` / `--dsh-statbar-left`), vertically centred in that row. While the anchor is missing — no session, a panel page, a collapsed layout — the plugin removes `data-dsh-statbar` and the dock falls back to its shipped place below the composer.
 
 ## Requirements
 
@@ -73,6 +76,7 @@ Disable or remove the `panel-titlebar` row (Plugin Manager: uninstall the `dsh-p
 | Want | Change |
 | --- | --- |
 | Start further from the menus | Override `--dsh-panel-titlebar-left` on `:root` (defaults to the measured menubar edge + 10px) |
+| Move the stats further from the tabs | Override `--dsh-statbar-left` on `:root` (defaults to the measured `…` right edge + 18px) |
 | Denser rows | Drop the `padding`/`font-size` declarations in the row rule — the shipped 36px metrics apply |
 | Softer separators between panels and menus | Add `margin-left` to the first row via `nav:has(> [class*="panelRow"]) > *:first-child` |
 
@@ -83,6 +87,7 @@ All of it lives in the `CSS` constant in [`client.js`](client.js); there is no b
 - The rules address the shipped sidebar's CSS-module class suffixes (`panelRow`, `panelTitle`, `panelGlyph`) and the `nav` that owns the panel rows. A sidebar rewrite in a future Harness release may need this plugin updated; the client module is loaded after `@deepseek-ai/dsh-client-ui-sidebar` for that reason.
 - The caption band is 40px tall and does not wrap: on a narrow window the trailing entries ellipsize and are eventually clipped instead of pushing the window controls.
 - The **More** popover keeps its shipped anchoring (measured from the trigger button when it opens).
+- The stats move relies on the View tab row exposing either its `…` launcher (`button.viewsMore*`) or the `viewTabs` container, and on `[data-composer-dock]` carrying only ambient stat entries. A profile that adds its own ambient panel to that dock would move it along; without any anchor the dock stays where it shipped.
 - Verified on Windows 11 with DSH Desktop (harness `0.2.1-rc.5`) at 150% display scaling: placement, live install, and the reclaimed sidebar space. Hover and the More popover reuse the shipped components; they were exercised manually, and CI covers the static contract only.
 
 ## Development
