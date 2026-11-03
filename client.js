@@ -83,7 +83,7 @@ html[data-dsh-statbar] [data-composer-dock] {
   left: var(--dsh-statbar-left, 320px);
   right: auto;
   box-sizing: border-box;
-  width: max-content;
+  width: min(calc(100vw - var(--dsh-statbar-left, 320px) - 24px), max-content);
   max-width: none;
   margin: 0;
   padding: 0;
@@ -92,6 +92,7 @@ html[data-dsh-statbar] [data-composer-dock] {
   justify-content: flex-start;
   align-items: center;
   gap: 12px;
+  overflow: hidden;
   transform: translateY(-50%);
   z-index: 30;
   pointer-events: auto;
@@ -166,9 +167,13 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 					root.style.setProperty("--dsh-statbar-left", `${left}px`);
 				}
 				const dock = document.querySelector("[data-composer-dock]");
-				const width = dock === null ? 0 : Math.ceil(dock.getBoundingClientRect().width);
+				if (dock === null) {
+					if (root.hasAttribute("data-dsh-statbar")) root.removeAttribute("data-dsh-statbar");
+					return;
+				}
+				const width = dock.scrollWidth;
 				const room = window.innerWidth - 24 - left;
-				const state = width > 0 && width > room ? "tight" : "";
+				const state = width > room ? "tight" : "";
 				if (root.getAttribute("data-dsh-statbar") !== state) root.setAttribute("data-dsh-statbar", state);
 			};
 		}
