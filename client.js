@@ -97,10 +97,46 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"]
 			};
 		}
 
+		/**
+		 * Make the caption entries behave like a toggle: a second click on the
+		 * already selected entry returns to the conversation.
+		 *
+		 * The shipped row keeps its own click handler and its own aria-current
+		 * marker; this listener only fires for the one row that reports
+		 * `aria-current="page"` and stops that click before the shipped handler
+		 * re-selects the same panel. The More launcher (`aria-haspopup`) is never
+		 * a panel entry, so it keeps opening its menu.
+		 *
+		 * @param ctx - client root context carrying the layout service.
+		 * @returns a cleanup function removing the listener.
+		 */
+		function installToggle(ctx) {
+			const layout = ctx.get("layout");
+			if (layout === void 0 || typeof layout.selectPanel !== "function") return () => {};
+
+			const onPointerClick = (event) => {
+				if (!document.documentElement.hasAttribute("data-windows-titlebar")) return;
+				const target = event.target;
+				if (!(target instanceof Element)) return;
+				const row = target.closest('[class*="panelRow"]');
+				if (row === null || row.getAttribute("aria-current") !== "page") return;
+				if (row.getAttribute("aria-haspopup") !== null) return;
+				const nav = row.closest("nav");
+				if (nav === null || nav.querySelector(':scope > [class*="panelRow"]') === null) return;
+				event.preventDefault();
+				event.stopPropagation();
+				layout.selectPanel(null);
+			};
+
+			document.addEventListener("click", onPointerClick, true);
+			return () => document.removeEventListener("click", onPointerClick, true);
+		}
+
 		return {
-			inject: [],
+			inject: ["layout"],
 			/**
-			 * Install the caption-row styles and keep the menubar offset current.
+			 * Install the caption-row styles, keep the menubar offset current and
+			 * turn the shipped entries into toggles.
 			 * @param ctx - client root context.
 			 */
 			apply(ctx) {
@@ -164,6 +200,8 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"]
 							watch?.disconnect();
 						};
 					}, "panel-titlebar: caption alignment");
+
+					ctx.effect(() => installToggle(ctx), "panel-titlebar: entry toggle");
 				}
 			},
 		};

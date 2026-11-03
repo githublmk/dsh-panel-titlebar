@@ -1,6 +1,6 @@
 {
   "name": "dsh-panel-titlebar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DeepSeek Harness Desktop: move the sidebar's global panel entries into the Windows title bar, right after the Application and Edit menus.",
   "keywords": [
     "dsh",
