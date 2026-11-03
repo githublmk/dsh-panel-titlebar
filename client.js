@@ -71,6 +71,12 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelTitle"]
 html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"] {
   flex: none;
 }
+/* The press has already been acted on; dim the row while the panel tears down. */
+html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [data-dsh-pending] {
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  opacity: 0.55;
+}
 /*
  * Session stats: the composer dock (turn/step counts, speed, token total, cache
  * hit and the context meter) moves into the View tab row, right after its More
@@ -195,22 +201,77 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 			const layout = ctx.get("layout");
 			if (layout === void 0 || typeof layout.selectPanel !== "function") return () => {};
 
-			const onPointerClick = (event) => {
-				if (!document.documentElement.hasAttribute("data-windows-titlebar")) return;
-				const target = event.target;
-				if (!(target instanceof Element)) return;
+			/** The row already cancelled on pointerdown; its click must not re-select. */
+			let swallowed = null;
+			let swallowTimer = 0;
+			let pendingTimer = 0;
+			let pendingRow = null;
+
+			const activeRow = (target) => {
+				if (!document.documentElement.hasAttribute("data-windows-titlebar")) return null;
+				if (!(target instanceof Element)) return null;
 				const row = target.closest('[class*="panelRow"]');
-				if (row === null || row.getAttribute("aria-current") !== "page") return;
-				if (row.getAttribute("aria-haspopup") !== null) return;
+				if (row === null || row.getAttribute("aria-current") !== "page") return null;
+				if (row.getAttribute("aria-haspopup") !== null) return null;
 				const nav = row.closest("nav");
-				if (nav === null || nav.querySelector(':scope > [class*="panelRow"]') === null) return;
-				event.preventDefault();
-				event.stopPropagation();
+				if (nav === null || nav.querySelector(':scope > [class*="panelRow"]') === null) return null;
+				return row;
+			};
+
+			/**
+			 * Deselect immediately: dim the row so the press has visible feedback,
+			 * then hand the switch to the layout service. The panel's own teardown
+			 * and the conversation's mount are the only remaining cost.
+			 */
+			const cancel = (row) => {
+				window.clearTimeout(pendingTimer);
+				window.clearTimeout(swallowTimer);
+				if (pendingRow !== null) pendingRow.removeAttribute("data-dsh-pending");
+				pendingRow = row;
+				row.setAttribute("data-dsh-pending", "");
+				swallowed = row;
+				swallowTimer = window.setTimeout(() => {
+					swallowed = null;
+					if (pendingRow !== null) pendingRow.removeAttribute("data-dsh-pending");
+					pendingRow = null;
+				}, 900);
 				layout.selectPanel(null);
 			};
 
-			document.addEventListener("click", onPointerClick, true);
-			return () => document.removeEventListener("click", onPointerClick, true);
+			/* Pointer input cancels on the press, not on the release, so the switch
+			 * starts up to a full click delay earlier. */
+			const onPointerDown = (event) => {
+				if (event.button !== 0) return;
+				const row = activeRow(event.target);
+				if (row !== null) cancel(row);
+			};
+
+			const onClick = (event) => {
+				const target = event.target;
+				const row = target instanceof Element ? target.closest('[class*="panelRow"]') : null;
+				if (row !== null && row === swallowed) {
+					event.preventDefault();
+					event.stopPropagation();
+					swallowed = null;
+					return;
+				}
+				/* Keyboard activation has no pointerdown, so the click path stays. */
+				const active = activeRow(target);
+				if (active === null) return;
+				event.preventDefault();
+				event.stopPropagation();
+				cancel(active);
+			};
+
+			document.addEventListener("pointerdown", onPointerDown, true);
+			document.addEventListener("click", onClick, true);
+			return () => {
+				document.removeEventListener("pointerdown", onPointerDown, true);
+				document.removeEventListener("click", onClick, true);
+				window.clearTimeout(swallowTimer);
+				window.clearTimeout(pendingTimer);
+				if (pendingRow !== null) pendingRow.removeAttribute("data-dsh-pending");
+			};
 		}
 
 		return {
@@ -253,8 +314,12 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 							});
 						};
 
-						/* Position and size of both anchors can change without a resize event. */
-						const timer = window.setInterval(run, 500);
+						/* Position and size of both anchors can change without a resize event.
+						 * One second is enough: the reads below force a style/layout flush, and
+						 * the sidebar and right column both report their own resizes. */
+						const timer = window.setInterval(() => {
+							if (document.visibilityState !== "hidden") run();
+						}, 1000);
 						window.addEventListener("resize", schedule);
 						const resize = typeof ResizeObserver === "function"
 							? new ResizeObserver(schedule)

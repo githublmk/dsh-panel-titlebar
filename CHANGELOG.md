@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-03
+
+### Changed
+
+- The entry toggle now cancels on `pointerdown` instead of waiting for `click`, so
+  the switch back to the conversation starts on the press, up to a full click delay
+  earlier. The pressed row dims at once (`data-dsh-pending`) while the panel tears
+  down, and the follow-up click is swallowed so the shipped handler cannot
+  re-select it. Keyboard activation keeps the click path.
+- The chrome alignment poll runs once per second, and never while the document is
+  hidden; both reads force a style/layout flush.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added
@@ -43,7 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ship Plugin Manager display metadata (English and Chinese), an exported icon, a
   static contract test suite and a CI workflow.
 
-[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/githublmk/dsh-panel-titlebar/releases/tag/v0.1.0
