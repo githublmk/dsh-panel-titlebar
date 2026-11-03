@@ -76,7 +76,7 @@ test('the stylesheet only restyles the two measured, marked seats', () => {
     .map((block) => block.split('{')[0].trim())
     .filter((selector) => selector.length > 0)
   assert.ok(rules.length >= 6, 'expected the caption-row and stats rules')
-  const scopes = ['html[data-windows-titlebar]', 'html[data-dsh-statbar]']
+  const scopes = ['html[data-windows-titlebar]', 'html[data-dsh-statbar']
   for (const selector of rules) {
     for (const line of selector.split('\n').map((entry) => entry.trim()).filter((entry) => entry.length > 0)) {
       assert.ok(

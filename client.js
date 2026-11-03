@@ -81,9 +81,9 @@ html[data-dsh-statbar] [data-composer-dock] {
   position: fixed;
   top: var(--dsh-statbar-top, 96px);
   left: var(--dsh-statbar-left, 320px);
-  right: 24px;
+  right: auto;
   box-sizing: border-box;
-  width: auto;
+  width: max-content;
   max-width: none;
   margin: 0;
   padding: 0;
@@ -98,6 +98,15 @@ html[data-dsh-statbar] [data-composer-dock] {
 }
 html[data-dsh-statbar] [data-composer-dock] > * {
   flex: none;
+}
+/*
+ * Narrow windows: the seat after the tab row's More launcher cannot hold the
+ * whole readout. Flagged by the measurement, so the strip tightens and fades out
+ * instead of cutting a pill in half mid-glyph.
+ */
+html[data-dsh-statbar="tight"] [data-composer-dock] {
+  gap: 8px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
 }
 `;
 
@@ -156,7 +165,11 @@ html[data-dsh-statbar] [data-composer-dock] > * {
 					root.style.setProperty("--dsh-statbar-top", `${top}px`);
 					root.style.setProperty("--dsh-statbar-left", `${left}px`);
 				}
-				if (!root.hasAttribute("data-dsh-statbar")) root.setAttribute("data-dsh-statbar", "");
+				const dock = document.querySelector("[data-composer-dock]");
+				const width = dock === null ? 0 : Math.ceil(dock.getBoundingClientRect().width);
+				const room = window.innerWidth - 24 - left;
+				const state = width > 0 && width > room ? "tight" : "";
+				if (root.getAttribute("data-dsh-statbar") !== state) root.setAttribute("data-dsh-statbar", state);
 			};
 		}
 
