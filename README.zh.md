@@ -47,6 +47,13 @@ plugin_manager install_bundle
 
 管理器会写入 profile 依赖、选中该 bundle 并挂载对应行。无需重启应用即可生效；若面板行没有立刻出现，刷新一次页面即可。
 
+发布到 npm 之后，同一个调用可以直接用包名代替路径：
+
+```text
+plugin_manager install_bundle
+  target: dsh-panel-titlebar@0.2.0
+```
+
 手工等价做法——在 profile 里加入对本目录的依赖，并在 profile 补丁中插入一行：
 
 ```yaml

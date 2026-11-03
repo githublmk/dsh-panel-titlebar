@@ -47,6 +47,13 @@ plugin_manager install_bundle
 
 The manager writes the profile dependency, selects the bundle and applies the row. The change is live without restarting the app; a page refresh is enough if the panel row does not appear immediately.
 
+Once the package is published, the same call accepts the name instead of a path:
+
+```text
+plugin_manager install_bundle
+  target: dsh-panel-titlebar@0.2.0
+```
+
 Manual equivalent — add a dependency on this checkout to the profile and insert its row in the profile patch:
 
 ```yaml

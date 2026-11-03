@@ -58,7 +58,8 @@
     "pack:check": "npm pack --dry-run"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "dsh": {
     "bundle": {
