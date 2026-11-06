@@ -34,6 +34,8 @@ The session stats that ship below the composer — turn and step counts, decode 
 - The entries work as a **toggle**: clicking the selected entry again returns to the conversation (`layout.selectPanel(null)`, the same destination as a panel's own “back to chat”), instead of re-selecting the panel that is already open. The click is stopped before the shipped handler runs; the **More** launcher never acts as a panel entry, so it keeps opening its menu.
 - The stats keep their own registration in `conversation.composer.dock` and their own dialogs; only their seat moves. The dock still renders the pills, but is positioned from the View tab row's **…** launcher (`--dsh-statbar-top` / `--dsh-statbar-left`), vertically centred in that row. While the anchor is missing — no session, a panel page, a collapsed layout — the plugin removes `data-dsh-statbar` and the dock falls back to its shipped place below the composer.
 
+The hoist is `position: fixed`, so it needs the dock's fixed box to resolve against the viewport. Harness `0.2.2` keeps the sticky composer on its own compositor layer with `will-change: transform` on the seat, which also makes that seat the containing block for fixed descendants; the plugin withdraws that hint while the marker is set, and checks on every pass that the dock actually landed on the measured seat. A build that captures the fixed box some other way drops the marker after two passes and keeps the shipped place.
+
 ## Requirements
 
 - DeepSeek Harness **Desktop** on Windows — the caption row exists only there. The plain Web build has no caption band, so the plugin is inert by design.
@@ -88,6 +90,7 @@ All of it lives in the `CSS` constant in [`client.js`](client.js); there is no b
 - The caption band is 40px tall and does not wrap: on a narrow window the trailing entries ellipsize and are eventually clipped instead of pushing the window controls.
 - The **More** popover keeps its shipped anchoring (measured from the trigger button when it opens).
 - The stats move relies on the View tab row exposing either its `…` launcher (`button.viewsMore*`) or the `viewTabs` container, and on `[data-composer-dock]` carrying only ambient stat entries. A profile that adds its own ambient panel to that dock would move it along; without any anchor the dock stays where it shipped.
+- Moving the dock relies on its `position: fixed` box resolving against the viewport. Harness `0.2.2` promotes the composer seat with `will-change: transform` (a containing block for fixed descendants); the stylesheet withdraws that hint while the dock is hoisted, at the cost of the seat's compositor layer while stats sit in the header. If a future build captures the fixed box by an actual `transform` or `contain`, the landed-box check drops the marker and the stats return below the composer rather than overlapping it.
 - Verified on Windows 11 with DSH Desktop (harness `0.2.1-rc.5`) at 150% display scaling: placement, live install, and the reclaimed sidebar space. Hover and the More popover reuse the shipped components; they were exercised manually, and CI covers the static contract only.
 
 ## Development

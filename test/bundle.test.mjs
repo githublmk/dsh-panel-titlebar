@@ -102,6 +102,21 @@ test('the session stats follow the View tab row and fall back cleanly', () => {
   assert.match(client, /setAttribute\("data-dsh-statbar"/)
 })
 
+test('the hoisted dock keeps resolving against the viewport', () => {
+  const client = read('client.js')
+  // A composited composer seat is the containing block for fixed descendants,
+  // so the hoist has to withdraw that hint while it is active.
+  assert.match(
+    client,
+    /html\[data-dsh-statbar\] \[data-composer-seat\] \{\s*will-change: auto !important;/,
+    'the seat hint that captures the fixed dock must be withdrawn while hoisted',
+  )
+  // And a build that captures it anyway must fall back to the shipped place
+  // instead of parking the pills on the composer.
+  assert.match(client, /let parked = false/)
+  assert.match(client, /parked = true[\s\S]*?removeAttribute\("data-dsh-statbar"\)/)
+})
+
 test('the placer follows the caption menubar instead of a hardcoded offset', () => {
   const client = read('client.js')
   assert.match(client, /\[data-windows-menu\]/)

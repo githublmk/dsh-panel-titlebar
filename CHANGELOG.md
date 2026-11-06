@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-06
+
+### Fixed
+
+- The session stats stay in the View tab row on Harness `0.2.2` again. That
+  release promotes the sticky composer seat with `will-change: transform`,
+  which also makes the seat the containing block for fixed descendants: the
+  hoisted dock resolved its `top`/`left` against the seat instead of the
+  viewport and dropped back onto the composer, half over the input card and
+  unable to be read as a header readout. The stylesheet now withdraws that hint
+  while `data-dsh-statbar` is set, and each measurement pass checks that the
+  dock actually landed on the measured seat. Two consecutive misses (a build
+  capturing the fixed box by a real `transform` or `contain`) drop the marker,
+  so the stats fall back below the composer instead of overlapping it.
+
 ## [0.3.2] - 2026-11-03
 
 ### Fixed

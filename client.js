@@ -78,6 +78,17 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [data-dsh-pending] {
   opacity: 0.55;
 }
 /*
+ * 0.2.2 keeps the sticky composer on its own compositor layer with
+ * will-change: transform on the seat. That declaration also makes the seat the
+ * containing block for fixed descendants, which would resolve the hoisted dock
+ * against the seat instead of the viewport and drop it back onto the composer.
+ * It is a repaint hint, not layout, so it is withdrawn only while the dock is
+ * hoisted; without the marker the shipped hint applies again.
+ */
+html[data-dsh-statbar] [data-composer-seat] {
+  will-change: auto !important;
+}
+/*
  * Session stats: the composer dock (turn/step counts, speed, token total, cache
  * hit and the context meter) moves into the View tab row, right after its More
  * launcher. Gated on the marker the measurement sets, so the dock keeps its
@@ -149,13 +160,22 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 		 * column and the window width, so the anchor is re-measured with the same
 		 * cadence as the caption offset. The marker is only set while the anchor
 		 * exists: without it the dock keeps its shipped place below the composer.
+		 * Each pass also checks that the dock actually landed on the measured
+		 * seat, because the hoist is only worth its stylesheet when the fixed box
+		 * still resolves against the viewport.
 		 *
 		 * @param root - the document element receiving the custom properties.
 		 * @returns a function that performs one measurement.
 		 */
 		function statPlacer(root) {
 			let previous = "";
+			/* Consecutive passes where the dock did not land on the measured seat. */
+			let missed = 0;
+			/* Latched when the hoist is proven to land elsewhere: this page load
+			 * keeps the shipped place instead of parking the pills on the composer. */
+			let parked = false;
 			return () => {
+				if (parked) return;
 				const anchor = document.querySelector('button[class*="viewsMore"]')
 					?? document.querySelector('[class*="viewTabs"]');
 				const rect = anchor === null ? null : anchor.getBoundingClientRect();
@@ -181,6 +201,19 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 				const room = window.innerWidth - 24 - left;
 				const state = width > room ? "tight" : "";
 				if (root.getAttribute("data-dsh-statbar") !== state) root.setAttribute("data-dsh-statbar", state);
+				/* A build that makes an ancestor the containing block for fixed
+				 * descendants (a transform or `will-change` on the composer seat)
+				 * resolves the dock against that ancestor instead of the viewport.
+				 * Compare the landed box with the measured seat; two misses in a
+				 * row mean the shipped place below the composer is the honest one. */
+				const placed = dock.getBoundingClientRect();
+				const off = placed.width === 0
+					|| Math.abs(placed.left - left) > 8
+					|| Math.abs(placed.top + placed.height / 2 - top) > 8;
+				missed = off ? missed + 1 : 0;
+				if (missed < 2) return;
+				parked = true;
+				root.removeAttribute("data-dsh-statbar");
 			};
 		}
 
