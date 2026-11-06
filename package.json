@@ -1,6 +1,6 @@
 {
   "name": "dsh-panel-titlebar",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "DeepSeek Harness Desktop chrome layout: the sidebar's global panel entries move into the Windows title bar after the Application/Edit menus, and the session stats move into the View tab row.",
   "keywords": [
     "dsh",

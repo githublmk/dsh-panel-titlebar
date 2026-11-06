@@ -117,6 +117,16 @@ test('the hoisted dock keeps resolving against the viewport', () => {
   assert.match(client, /parked = true[\s\S]*?removeAttribute\("data-dsh-statbar"\)/)
 })
 
+test('a code reload rewrites the stylesheet instead of running the old one', () => {
+  const client = read('client.js')
+  assert.match(
+    client,
+    /if \(tag\.textContent !== CSS\) tag\.textContent = CSS/,
+    'an existing tag must be brought up to date, not skipped',
+  )
+  assert.match(client, /dataset\.pluginOwner/, 'the teardown must drop only its own tag')
+})
+
 test('the placer follows the caption menubar instead of a hardcoded offset', () => {
   const client = read('client.js')
   assert.match(client, /\[data-windows-menu\]/)

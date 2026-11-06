@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-11-06
+
+### Fixed
+
+- A code reload without a document reload keeps the previous instance's
+  `<style>` tag in the head, and `apply` treated any existing tag as "already
+  installed" and returned without writing. The page then ran the new module
+  against the old sheet: 0.3.2's sheet has no seat rule, so the hoisted dock
+  stayed captured by the composer seat and the landed-box check fell back to
+  the shipped place below the composer. The tag is now rewritten on every load
+  and claimed by the instance that wrote it, so a teardown drops only its own.
+- The landed-box check no longer counts a dock that has no box yet as a miss,
+  needs three consecutive misses instead of two, and records the outcome in
+  `data-dsh-statbar-state` for a field diagnosis.
+
 ## [0.3.3] - 2026-11-06
 
 ### Fixed

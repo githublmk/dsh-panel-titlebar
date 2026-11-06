@@ -204,16 +204,23 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 				/* A build that makes an ancestor the containing block for fixed
 				 * descendants (a transform or `will-change` on the composer seat)
 				 * resolves the dock against that ancestor instead of the viewport.
-				 * Compare the landed box with the measured seat; two misses in a
-				 * row mean the shipped place below the composer is the honest one. */
+				 * Compare the landed box with the measured seat; a dock that has no
+				 * box yet says nothing, and three misses in a row mean the shipped
+				 * place below the composer is the honest one. The state stays on the
+				 * root for a field diagnosis instead of living only in the console. */
 				const placed = dock.getBoundingClientRect();
-				const off = placed.width === 0
-					|| Math.abs(placed.left - left) > 8
-					|| Math.abs(placed.top + placed.height / 2 - top) > 8;
+				const off = placed.width > 0 && (
+					Math.abs(placed.left - left) > 8
+					|| Math.abs(placed.top + placed.height / 2 - top) > 8
+				);
 				missed = off ? missed + 1 : 0;
-				if (missed < 2) return;
+				if (missed < 3) {
+					root.dataset.dshStatbarState = off ? `off:${missed}` : "hoisted";
+					return;
+				}
 				parked = true;
 				root.removeAttribute("data-dsh-statbar");
+				root.dataset.dshStatbarState = "fallback";
 			};
 		}
 
@@ -319,13 +326,24 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 
 				if (ctx !== void 0 && typeof ctx.effect === "function") {
 					ctx.effect(() => {
-						if (document.querySelector(`style[data-plugin-css=${JSON.stringify(STYLE_ID)}]`) !== null) return () => {};
-						const tag = document.createElement("style");
-						tag.dataset.plugin = "dsh-panel-titlebar";
-						tag.dataset.pluginCss = STYLE_ID;
-						tag.textContent = CSS;
-						document.head.appendChild(tag);
-						return () => tag.remove();
+						const selector = `style[data-plugin-css=${JSON.stringify(STYLE_ID)}]`;
+						const existing = document.querySelector(selector);
+						const tag = existing ?? document.createElement("style");
+						if (existing === null) {
+							tag.dataset.plugin = "dsh-panel-titlebar";
+							tag.dataset.pluginCss = STYLE_ID;
+							document.head.appendChild(tag);
+						}
+						/* A code reload without a document reload keeps the previous
+						 * instance's tag in the head. Rewrite it, or the page would run
+						 * the new module against an old sheet. The owner id makes the
+						 * teardown drop only its own tag, never the successor's. */
+						if (tag.textContent !== CSS) tag.textContent = CSS;
+						const owner = `${Date.now()}-${Math.random()}`;
+						tag.dataset.pluginOwner = owner;
+						return () => {
+							if (tag.dataset.pluginOwner === owner) tag.remove();
+						};
 					}, "panel-titlebar: styles");
 
 					ctx.effect(() => {
