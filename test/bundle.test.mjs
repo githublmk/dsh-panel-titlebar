@@ -93,6 +93,23 @@ test('the stylesheet only restyles the two measured, marked seats', () => {
   assert.doesNotMatch(client, /document\.body\.appendChild|removeChild|innerHTML/)
 })
 
+test('the caption hoist follows the 0.2.2 entry wrapper and its scroll ports', () => {
+  const client = read('client.js')
+  const opening = 'const CSS = `'
+  const start = client.indexOf(opening) + opening.length
+  const css = client.slice(start, client.indexOf('`;', start)).replace(/\/\*[\s\S]*?\*\//g, '')
+  // 0.2.2 wraps each entry in a `panelEntry` and hides the list inside the
+  // sidebar's scroll ports, so the marker must match at any depth.
+  assert.match(css, /nav:has\(\[class\*="panelRow"\]\)/, 'the row marker must not require a direct child')
+  assert.doesNotMatch(css, /nav:has\(> \[class\*="panelRow"\]\)/, 'the direct-child marker no longer matches')
+  assert.match(css, /> \[class\*="panelEntry"\] \{\s*border: 0;\s*background: transparent;/, 'the wrapper carries no sidebar paint')
+  assert.match(css, /\[class\*="panelUnpin"\] \{\s*display: none;/, 'the inline unpin slot has no room in a menu bar')
+  assert.match(css, /\[class\*="panelRow"\]:is\([^)]*\[aria-current="page"\][^)]*\) \{\s*background: var\(--dsw-alias-interactive-bg-hover\);/, 'the selected row is painted from the shipped state marker')
+  // A query container is a containing block for fixed descendants; the port
+  // and the region that holds it both have to be withdrawn.
+  assert.match(css, /\[data-sidebar-scrollport\],\s*html\[data-windows-titlebar\] :has\(> \[data-sidebar-scrollport\]\) \{\s*container-type: normal !important;/)
+})
+
 test('the session stats follow the View tab row and fall back cleanly', () => {
   const client = read('client.js')
   assert.match(client, /function statPlacer/)
@@ -145,5 +162,7 @@ test('a second press on the selected entry returns to the conversation', () => {
   assert.match(client, /removeEventListener\("click", onClick, true\)/)
   assert.match(client, /stopPropagation\(\)/, 'the shipped re-select must be preempted')
   assert.match(client, /getAttribute\("aria-haspopup"\) !== null/, 'the More launcher must stay a launcher')
+  assert.match(client, /const nav = row\.closest\("nav"\);\s*if \(nav === null\) return null;/, 'the toggle stays scoped to rows inside the panel nav')
+  assert.doesNotMatch(client, /:scope > \[class\*="panelRow"\]/, 'the direct-child check no longer matches 0.2.2')
   assert.match(client, /data-dsh-pending/, 'the press must look acted on immediately')
 })

@@ -28,13 +28,15 @@ The session stats that ship below the composer — turn and step counts, decode 
 ## How it works
 
 - The navigation stays the sidebar plugin's own registration in `sidebar.panellist`. Nothing is copied, wrapped, replaced or removed, so the **More** launcher, its pin/unpin menu, the active-panel highlight and the analytics of the shipped entries are untouched.
-- One stylesheet takes that existing `nav` out of the sidebar's flex flow (`position: fixed`) and lays its rows out horizontally in the caption band. Row metrics follow the caption menus: 28px high, 14px text, 6px radius, secondary label colour, hover and active from the theme tokens.
+- One stylesheet takes that existing `nav` out of the sidebar flow (`position: fixed`) and lays its rows out horizontally in the caption band. Row metrics follow the caption menus: 28px high, 14px text, 6px radius, secondary label colour, hover and active from the theme tokens.
 - The stylesheet is scoped to `html[data-windows-titlebar]`, a marker only the Desktop preload sets. The plain Web GUI keeps the shipped vertical list.
+- Harness `0.2.2` wraps each panel entry in a `panelEntry` (the More launcher keeps its own `moreAnchor` wrapper) and moves the nav into the sidebar's scroll ports, so the marker is matched at any depth, the wrapper is the caption flex item, and the compact metrics sit on the row. The inline unpin button is hidden there — a menu bar has no room for a hover slot, and unpinning from it would delete the entry under the pointer — while pin/unpin stays in the **More** menu.
+- `0.2.2` also makes the scroll port and its region query containers (`container-type: size` / `scroll-state`), and a query container is a containing block for fixed descendants. The stylesheet withdraws that containment while the marker is set, for the same reason it withdraws the composer seat's `will-change` for the stats below. The workspace list's trailing-scrollbar query is the only consumer the withdrawal drops.
 - The left offset is **measured**, not hardcoded: the plugin reads the right edge of the preload-injected `[data-windows-menu]` host into `--dsh-panel-titlebar-left` and keeps it current, so collapsing the sidebar (menu start moves 48px → 84px), switching locale, or resizing stays aligned.
-- The entries work as a **toggle**: clicking the selected entry again returns to the conversation (`layout.selectPanel(null)`, the same destination as a panel's own “back to chat”), instead of re-selecting the panel that is already open. The click is stopped before the shipped handler runs; the **More** launcher never acts as a panel entry, so it keeps opening its menu.
+- The entries work as a **toggle**: clicking the selected entry again returns to the conversation (`layout.selectPanel(null)`, the same destination as a panel's own “back to chat”), instead of re-selecting the panel that is already open. The click is stopped before the shipped handler runs; the **More** launcher never acts as a panel entry, so it keeps opening its menu. The selected row is recognised from the shipped `aria-current="page"` marker, so the toggle works with and without the `0.2.2` wrapper.
 - The stats keep their own registration in `conversation.composer.dock` and their own dialogs; only their seat moves. The dock still renders the pills, but is positioned from the View tab row's **…** launcher (`--dsh-statbar-top` / `--dsh-statbar-left`), vertically centred in that row. While the anchor is missing — no session, a panel page, a collapsed layout — the plugin removes `data-dsh-statbar` and the dock falls back to its shipped place below the composer.
 
-The hoist is `position: fixed`, so it needs the dock's fixed box to resolve against the viewport. Harness `0.2.2` keeps the sticky composer on its own compositor layer with `will-change: transform` on the seat, which also makes that seat the containing block for fixed descendants; the plugin withdraws that hint while the marker is set, and checks on every pass that the dock actually landed on the measured seat. A build that captures the fixed box some other way drops the marker after two passes and keeps the shipped place.
+The hoist is `position: fixed`, so it needs the dock's fixed box to resolve against the viewport. Harness `0.2.2` keeps the sticky composer on its own compositor layer with `will-change: transform` on the seat, which also makes that seat the containing block for fixed descendants; the plugin withdraws that hint while the marker is set, and checks on every pass that the dock actually landed on the measured seat. A build that captures the fixed box some other way drops the marker after three passes and keeps the shipped place.
 
 ## Requirements
 
@@ -79,19 +81,22 @@ Disable or remove the `panel-titlebar` row (Plugin Manager: uninstall the `dsh-p
 | --- | --- |
 | Start further from the menus | Override `--dsh-panel-titlebar-left` on `:root` (defaults to the measured menubar edge + 10px) |
 | Move the stats further from the tabs | Override `--dsh-statbar-left` on `:root` (defaults to the measured `…` right edge + 18px) |
-| Denser rows | Drop the `padding`/`font-size` declarations in the row rule — the shipped 36px metrics apply |
-| Softer separators between panels and menus | Add `margin-left` to the first row via `nav:has(> [class*="panelRow"]) > *:first-child` |
+| Denser rows | Drop the `padding`/`font-size` declarations in the row rule — the shipped row metrics apply (32px, plus the sidebar's 38px unpin slot) |
+| Softer separators between panels and menus | Add `margin-left` to the first row via `nav:has([class*="panelRow"]) > *:first-child` |
 
 All of it lives in the `CSS` constant in [`client.js`](client.js); there is no build step.
 
 ## Compatibility and limits
 
-- The rules address the shipped sidebar's CSS-module class suffixes (`panelRow`, `panelTitle`, `panelGlyph`) and the `nav` that owns the panel rows. A sidebar rewrite in a future Harness release may need this plugin updated; the client module is loaded after `@deepseek-ai/dsh-client-ui-sidebar` for that reason.
+- The rules address the shipped sidebar's CSS-module class suffixes (`panelRow`, `panelEntry`, `panelUnpin`, `panelTitle`, `panelGlyph`) and the `nav` that owns the panel rows. The marker matches the row at any depth so the `0.2.1` list and the `0.2.2` `panelEntry` wrapper both work; a sidebar rewrite in a future Harness release may need this plugin updated. The client module is loaded after `@deepseek-ai/dsh-client-ui-sidebar` for that reason.
+- Navigating with the caption entries relies on the shipped selected-state marker, `aria-current="page"` on the row button, rather than the removed `panelActive` class.
+- Withdrawing the scroll ports' containment drops the `scroll-state` query the workspace list uses to hide its own scrollbar while the sidebar itself can scroll. In the hoisted layout that only costs an inner scrollbar; the caption entries are not affected.
 - The caption band is 40px tall and does not wrap: on a narrow window the trailing entries ellipsize and are eventually clipped instead of pushing the window controls.
+- With the sidebar collapsed, `0.2.2` renders the rows without their label element, so the caption entries are icon-only with tooltips in that state; the `display: flex !important` keeps them visible where the shipped rail hides the list.
 - The **More** popover keeps its shipped anchoring (measured from the trigger button when it opens).
 - The stats move relies on the View tab row exposing either its `…` launcher (`button.viewsMore*`) or the `viewTabs` container, and on `[data-composer-dock]` carrying only ambient stat entries. A profile that adds its own ambient panel to that dock would move it along; without any anchor the dock stays where it shipped.
 - Moving the dock relies on its `position: fixed` box resolving against the viewport. Harness `0.2.2` promotes the composer seat with `will-change: transform` (a containing block for fixed descendants); the stylesheet withdraws that hint while the dock is hoisted, at the cost of the seat's compositor layer while stats sit in the header. If a future build captures the fixed box by an actual `transform` or `contain`, the landed-box check drops the marker and the stats return below the composer rather than overlapping it.
-- Verified on Windows 11 with DSH Desktop (harness `0.2.1-rc.5`) at 150% display scaling: placement, live install, and the reclaimed sidebar space. Hover and the More popover reuse the shipped components; they were exercised manually, and CI covers the static contract only.
+- Verified against the shipped `0.2.2` sidebar bundle (entry wrapper, unpin slot, scroll-port containment) and on Windows 11 with DSH Desktop (harness `0.2.1-rc.5`, 150% display scaling) for placement, live install, and the reclaimed sidebar space. Hover, the More popover and the caption drag region reuse the shipped components; they were exercised manually, and CI covers the static contract only.
 
 ## Development
 

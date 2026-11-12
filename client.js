@@ -13,9 +13,22 @@ window.__ModuleLoader__.load({
 		 * Desktop caption band, immediately after the Application/Edit menubar.
 		 * Everything is scoped to `html[data-windows-titlebar]`, so the plain Web
 		 * GUI keeps the shipped vertical list.
+		 *
+		 * Harness 0.2.2 renders the panel list inside the sidebar's scroll ports
+		 * and wraps every panel entry in a `panelEntry` that owns the inline unpin
+		 * button. The port and its region are query containers (`container-type`),
+		 * and a query container is also the containing block for fixed descendants —
+		 * so the stylesheet withdraws that containment while the marker is set,
+		 * exactly as the stats hoist withdraws the composer seat's `will-change`.
+		 * The port attribute is present exactly while the sidebar is expanded, the
+		 * same condition under which the shipped container rules apply.
 		 */
 		const CSS = `
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) {
+html[data-windows-titlebar] [data-sidebar-scrollport],
+html[data-windows-titlebar] :has(> [data-sidebar-scrollport]) {
+  container-type: normal !important;
+}
+html[data-windows-titlebar] nav:has([class*="panelRow"]) {
   position: fixed;
   top: 0;
   left: var(--dsh-panel-titlebar-left, 150px);
@@ -34,15 +47,26 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) {
   -webkit-app-region: no-drag;
   max-width: calc(100vw - var(--dsh-panel-titlebar-left, 150px) - 152px);
 }
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) > * {
+html[data-windows-titlebar] nav:has([class*="panelRow"]) > * {
   display: flex;
   flex-direction: row;
   align-items: center;
   flex: 0 1 auto;
   min-width: 0;
   margin: 0;
+  border-radius: 6px;
 }
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelRow"] {
+/* 0.2.2's entry wrapper insets the shipped row for the sidebar paint and
+ * reserves a hover slot for the inline unpin button. Neither belongs in a menu
+ * bar: the button carries the caption metrics, and pin/unpin stays in More. */
+html[data-windows-titlebar] nav:has([class*="panelRow"]) > [class*="panelEntry"] {
+  border: 0;
+  background: transparent;
+}
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [class*="panelUnpin"] {
+  display: none;
+}
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [class*="panelRow"] {
   box-sizing: border-box;
   width: auto;
   min-width: 0;
@@ -50,6 +74,7 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelRow"] {
   height: 28px;
   margin: 0;
   padding: 0 10px;
+  border: 0;
   gap: 6px;
   border-radius: 6px;
   color: var(--dsw-alias-label-secondary);
@@ -57,22 +82,22 @@ html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelRow"] {
   line-height: 28px;
   flex: 0 1 auto;
   white-space: nowrap;
+  background: transparent;
 }
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelRow"]:is(:hover, :focus-visible, [aria-expanded="true"]),
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelActive"] {
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [class*="panelRow"]:is(:hover, :focus-visible, [aria-expanded="true"], [aria-current="page"]) {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
 }
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelTitle"] {
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [class*="panelTitle"] {
   max-width: 128px;
   font-size: 14px;
   line-height: 28px;
 }
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [class*="panelGlyph"] {
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [class*="panelGlyph"] {
   flex: none;
 }
 /* The press has already been acted on; dim the row while the panel tears down. */
-html[data-windows-titlebar] nav:has(> [class*="panelRow"]) [data-dsh-pending] {
+html[data-windows-titlebar] nav:has([class*="panelRow"]) [data-dsh-pending] {
   background: transparent;
   color: var(--dsw-alias-label-tertiary);
   opacity: 0.55;
@@ -254,7 +279,7 @@ html[data-dsh-statbar="tight"] [data-composer-dock] {
 				if (row === null || row.getAttribute("aria-current") !== "page") return null;
 				if (row.getAttribute("aria-haspopup") !== null) return null;
 				const nav = row.closest("nav");
-				if (nav === null || nav.querySelector(':scope > [class*="panelRow"]') === null) return null;
+				if (nav === null) return null;
 				return row;
 			};
 

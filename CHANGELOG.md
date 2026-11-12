@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-11-12
+
+### Fixed
+
+- The caption hoist applies on Harness `0.2.2` again. That release renders each
+  panel entry inside a `panelEntry` wrapper (the More launcher keeps its own
+  `moreAnchor` wrapper, and the new inline unpin button hangs off the entry) and
+  moves the nav into the sidebar's scroll ports, so the old
+  `nav:has(> [class*="panelRow"])` marker matched nothing and the entries stayed
+  in the sidebar. The nav is now recognised at any depth, the wrapper is the
+  caption flex item, and the compact metrics sit on the row.
+- `0.2.2` makes the sidebar's scroll port and its region query containers
+  (`container-type`), and a query container is also the containing block for
+  fixed descendants: had the hoist matched, it would have resolved against the
+  scroll port and landed inside the sidebar. The stylesheet withdraws that
+  containment while the marker is set, as it already withdraws the composer
+  seat's `will-change` for the stats hoist.
+- A second press on the selected caption entry returns to the conversation
+  again. The toggle required a direct-child `panelRow` in the nav, which the
+  entry wrapper removed, so the check is now any depth.
+
+### Changed
+
+- The selected entry is styled from the shipped `aria-current="page"` marker
+  instead of the removed `panelActive` class, so the highlight follows the
+  shipped state on both structures.
+- The inline unpin button is hidden in the caption row: a menu bar has no room
+  for it, and unpinning from there would delete the entry under the pointer.
+  Pin/unpin stays in the More menu, which owns it.
+- A collapsed sidebar keeps the caption entries visible (the shipped `0.2.2`
+  rail hides the list). That release renders the labels only while the sidebar
+  is expanded, so the entries are icon-only with tooltips in that state.
+
 ## [0.3.4] - 2026-11-06
 
 ### Fixed
@@ -105,7 +138,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ship Plugin Manager display metadata (English and Chinese), an exported icon, a
   static contract test suite and a CI workflow.
 
-[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.4...v0.3.5
+[0.3.4]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/githublmk/dsh-panel-titlebar/compare/v0.2.0...v0.3.0
